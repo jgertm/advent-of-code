@@ -1,0 +1,84 @@
+(ns advent-of-code.no-time-for-a-taxicab
+  (:require [clojure.java.io :as io]))
+
+(def instructions
+  (io/resource "input-01.txt"))
+
+(def ^:private headings [:N :E :S :W])
+(def ^:private directions [:L :R])
+
+(defn- parse-instructions
+  "Extract the individual turn and step instructions from a string, returning a
+  seq of 2-vectors of keywordized turn direction and integer step amount."
+  [instruction-string]
+  (->> instruction-string
+       (re-seq #"([LR])(\d+)")
+       (map (fn [[_ direction steps]]
+              [(keyword direction) (Integer/parseInt steps)]))))
+
+(defn- turn
+  "Determines the new heading from the current heading and a turn direction."
+  [heading direction]
+  {:pre [(contains? (set headings) heading)
+         (contains? (set directions) direction)]}
+  (let [left (zipmap (next (cycle headings)) headings)
+        right (zipmap headings (next (cycle headings)))]
+    (get-in {:L left, :R right} [direction heading])))
+
+(defn- inertialize-instructions
+  "Transforms a sequence of instructions from the body-centered, turn-based
+  coordinate system into a geodetic coordinate system."
+  [instruction-seq]
+  {:post [#(= (count instruction-seq) (count %))]}
+  (let [directions (map first instruction-seq)
+        steps (map second instruction-seq)
+        headings (next (reductions turn :N directions))]
+    (map vector headings steps)))
+
+(defn- move
+  ([]
+   [0 0])
+  ([instruction]
+   (move (move) instruction))
+  ([[lat lon] [heading steps]]
+   (case heading
+     :N [(+ lat steps) lon]
+     :S [(- lat steps) lon]
+     :E [lat (+ lon steps)]
+     :W [lat (- lon steps)])))
+
+(defn- final-location
+  "Computes the final location from a sequence of absolute movement instruction."
+  [instruction-seq]
+  {:pre [(every? (every-pred #(= 2 (count %))
+                             #(contains? (set headings) (first %))
+                             #(pos? (second %)))
+                 instruction-seq)]
+   :post [#(= 2 (count %))]}
+  (reduce move [0 0] instruction-seq))
+
+(defn- taxicab-metric
+  "Computes the taxicab (or Manhattan) distance of two points in Cartesian
+  coordinates."
+  ([p]
+   (->> p
+        (map #(Math/abs %))
+        (reduce +)))
+  ([pa pb]
+   (->> pb
+        (map (fn [ca cb] (Math/abs (- ca cb))) pa)
+        (reduce +))))
+
+(defn solve-part-one
+  "Determines the shortest path to Easter Bunny HQ, given a file containing
+  turn-by-turn instructions to the HQ."
+  [instruction-file]
+  (-> instruction-file
+      slurp
+      parse-instructions
+      inertialize-instructions
+      final-location
+      taxicab-metric))
+
+(comment
+  (solve-part-one instructions))
