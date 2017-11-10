@@ -1,9 +1,6 @@
 (ns advent-of-code.no-time-for-a-taxicab
   (:require [clojure.java.io :as io]))
 
-(def instructions
-  (io/resource "input-01.txt"))
-
 (def ^:private headings [:N :E :S :W])
 (def ^:private directions [:L :R])
 
@@ -69,19 +66,15 @@
         (map (fn [ca cb] (Math/abs (- ca cb))) pa)
         (reduce +))))
 
-(defn solve-part-one
+(defn- solve-part-one
   "Determines the shortest path to Easter Bunny HQ, given a file containing
   turn-by-turn instructions to the HQ."
-  [instruction-file]
-  (-> instruction-file
-      slurp
+  [instruction-string]
+  (-> instruction-string
       parse-instructions
       inertialize-instructions
       final-location
       taxicab-metric))
-
-(comment
-  (solve-part-one instructions))
 
 (defn- expand-instructions
   "Replaces every multi-step absolute instruction by respectively many single
@@ -105,10 +98,9 @@
               (reduced new)))
           #{} xs))
 
-(defn solve-part-two
-  [instruction-file]
-  (-> instruction-file
-      slurp
+(defn- solve-part-two
+  [instruction-string]
+  (-> instruction-string
       parse-instructions
       inertialize-instructions
       expand-instructions
@@ -116,5 +108,8 @@
       first-duplicate
       taxicab-metric))
 
-(comment
-  (println (solve-part-two instructions)))
+(defn present-solution
+  [input-file]
+  (let [instruction-string (slurp input-file)]
+    (println (format "Final intersection is %d blocks away." (solve-part-one instruction-string)))
+    (println (format "First intersection to be visited twice is %d blocks away." (solve-part-two instruction-string)))))
