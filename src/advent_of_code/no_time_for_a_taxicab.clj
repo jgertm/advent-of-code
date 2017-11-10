@@ -82,3 +82,39 @@
 
 (comment
   (solve-part-one instructions))
+
+(defn- expand-instructions
+  "Replaces every multi-step absolute instruction by respectively many single
+  steps."
+  [instruction-seq]
+  (mapcat (fn [[heading steps]] (repeat steps [heading 1])) instruction-seq))
+
+(defn- intermediate-locations
+  "Computes the sequence of locations that arise from following a sequence of
+  inertial instructions. "
+  [instruction-seq]
+  (reductions move [0 0] instruction-seq))
+
+(defn- first-duplicate
+  "Returns the first element from a sequence that has already occurred before."
+  [xs]
+  {:pre [(sequential? xs)]}
+  (reduce (fn [seen new]
+            (if-not (contains? seen new)
+              (conj seen new)
+              (reduced new)))
+          #{} xs))
+
+(defn solve-part-two
+  [instruction-file]
+  (-> instruction-file
+      slurp
+      parse-instructions
+      inertialize-instructions
+      expand-instructions
+      intermediate-locations
+      first-duplicate
+      taxicab-metric))
+
+(comment
+  (println (solve-part-two instructions)))
