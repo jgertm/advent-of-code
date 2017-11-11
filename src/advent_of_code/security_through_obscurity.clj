@@ -2,17 +2,17 @@
   (:require [clojure.java.io :as io]
             [clojure.string :as str]))
 
-(def ^:private input-file
-  (io/resource "input-04.txt"))
+(def ^:private rooms-str
+  (-> "input-04.txt" io/resource slurp))
 
 (defn- parse-room
   "Takes a triple of strings representing the components of a room and massages
   them into a more useful map:
-  - removes dashes from `name`
+  - name remains as is
   - parses `sector-id`to int
   - checksum remains as is"
   [[name sector-id checksum]]
-  {:name (str/replace name #"-" "")
+  {:name name
    :sector-id (Integer/parseInt sector-id)
    :checksum checksum})
 
@@ -22,13 +22,13 @@
   [rooms-str]
   (->> rooms-str
        (re-seq #"([a-z-]+)-(\d+)\[([a-z]{5})\]")
-       (map (comp parse-room next))))
+       (map #(-> % next parse-room))))
 
 (defn- room-name-checksum
   "Computes the checksum of a room name, given by the five most frequent
   characters, with ties broken by alphabetic position."
   [name]
-  (->> name
+  (->> (str/replace name #"-" "")
        frequencies
        (sort-by (juxt second (comp - int first)) (comp - compare))
        (take 5)
@@ -49,7 +49,49 @@
        (map :sector-id)
        (reduce +)))
 
+(comment
+  (solve-part-one rooms-str))
+
+(defn- shift-char
+  [c offset]
+  (let [char-pos (- (int c) (int \a))
+        total-offset (mod (+ char-pos offset) 26)]
+    (char (+ (int \a) total-offset))))
+
+(defn- shift-string
+  [str offset]
+  (->> str
+       (map #(cond-> %
+              (<= (int \a) (int %) (int \z))
+              (shift-char offset)))
+       str/join))
+
+(defn- decrypt-room
+  [{:keys [sector-id] :as room}]
+  (update room :name shift-string sector-id))
+
+(defn- index-by
+  [f xrel]
+  {:pre [(coll? xrel) (every? map? xrel)]
+   :post [map?]}
+  (->> xrel
+       (map (juxt f identity))
+       (into {})))
+
+(defn- solve-part-two
+  [rooms-str]
+  (get-in (->> rooms-str
+        parse-rooms
+        (filter real-room?)
+        (map decrypt-room)
+        (index-by :name))
+          ["northpole-object-storage" :sector-id]))
+
+(comment
+  (solve-part-two rooms-str))
+
 (defn present-solution
   [input-file]
   (let [rooms-string (slurp input-file)]
-    (println (format "Sum of all real rooms' sector IDs: %d." (solve-part-one rooms-string)))))
+    (println (format "Sum of all real rooms' sector IDs: %d." (solve-part-one rooms-string)))
+    (println (format "Northpole object storage room sector ID: %s" (solve-part-two rooms-string)))))
