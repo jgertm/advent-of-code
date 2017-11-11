@@ -1,14 +1,17 @@
 (ns advent-of-code.no-time-for-a-taxicab
   (:require [clojure.java.io :as io]))
 
+(def ^:private instruction-str
+  (-> "input-01.txt" io/resource slurp))
+
 (def ^:private headings [:N :E :S :W])
 (def ^:private directions [:L :R])
 
 (defn- parse-instructions
   "Extract the individual turn and step instructions from a string, returning a
   seq of 2-vectors of keywordized turn direction and integer step amount."
-  [instruction-string]
-  (->> instruction-string
+  [instruction-str]
+  (->> instruction-str
        (re-seq #"([LR])(\d+)")
        (map (fn [[_ direction steps]]
               [(keyword direction) (Integer/parseInt steps)]))))
@@ -69,12 +72,15 @@
 (defn- solve-part-one
   "Determines the shortest path to Easter Bunny HQ, given a file containing
   turn-by-turn instructions to the HQ."
-  [instruction-string]
-  (-> instruction-string
+  [instruction-str]
+  (-> instruction-str
       parse-instructions
       inertialize-instructions
       final-location
       taxicab-metric))
+
+(comment
+  (solve-part-one instructions))
 
 (defn- expand-instructions
   "Replaces every multi-step absolute instruction by respectively many single
@@ -99,8 +105,8 @@
           #{} xs))
 
 (defn- solve-part-two
-  [instruction-string]
-  (-> instruction-string
+  [instruction-str]
+  (-> instruction-str
       parse-instructions
       inertialize-instructions
       expand-instructions
@@ -108,8 +114,11 @@
       first-duplicate
       taxicab-metric))
 
+(comment
+  (solve-part-two instructions))
+
 (defn present-solution
   [input-file]
-  (let [instruction-string (slurp input-file)]
-    (println (format "Final intersection is %d blocks away." (solve-part-one instruction-string)))
-    (println (format "First intersection to be visited twice is %d blocks away." (solve-part-two instruction-string)))))
+  (let [instruction-str (slurp input-file)]
+    (println (format "Final intersection is %d blocks away." (solve-part-one instruction-str)))
+    (println (format "First intersection to be visited twice is %d blocks away." (solve-part-two instruction-str)))))
