@@ -90,10 +90,30 @@
          bot-inventories
          (find-special-bot [61 17]))))
 
+
+(defn- output-bin-contents
+  "Returns the chip IDs of a set of output bins in a given state."
+  [state bins]
+  (map first (-> state
+                 :output
+                 (select-keys bins)
+                 vals)))
+
+(defn- solve-part-two
+  "Computes the product of the chip IDs that are contained in the bins 0, 1 and 2
+  at the end of the simulation."
+  [instructions-str]
+  (let [state (extract-initial-state instructions-str)
+        rules (extract-transfer-rules instructions-str)]
+    (reduce * (-> (simulate state rules)
+                  last
+                  (output-bin-contents [0 1 2])))))
+
 (comment
-  (solve-part-one instructions-str))
+  (solve-part-two instructions-str))
 
 (defn present-solution
   [input-file]
   (let [instructions-string (slurp input-file)]
-    (println (format "Bot that compared chips 61 and 17: %d" (solve-part-one instructions-string)))))
+    (println (format "Bot that compared chips 61 and 17: %d" (solve-part-one instructions-string)))
+    (println (format "Product of chip IDs of bin 0, 1 and 2: %d" (solve-part-two instructions-string)))))
