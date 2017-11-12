@@ -90,6 +90,7 @@
          bot-inventories
          (find-special-bot [61 17]))))
 
+(assert (= 98 (solve-part-one instructions-str)))
 
 (defn- output-bin-contents
   "Returns the chip IDs of a set of output bins in a given state."
@@ -109,8 +110,7 @@
                   last
                   (output-bin-contents [0 1 2])))))
 
-(comment
-  (solve-part-two instructions-str))
+(assert (= 4042 (solve-part-two instructions-str)))
 
 (defn present-solution
   [input-file]
