@@ -1,5 +1,6 @@
 (ns advent-of-code.security-through-obscurity
-  (:require [clojure.java.io :as io]
+  (:require [advent-of-code.utils :as utils]
+            [clojure.java.io :as io]
             [clojure.string :as str]))
 
 (def ^:private rooms-str
@@ -70,21 +71,13 @@
   [{:keys [sector-id] :as room}]
   (update room :name shift-string sector-id))
 
-(defn- index-by
-  [f xrel]
-  {:pre [(coll? xrel) (every? map? xrel)]
-   :post [map?]}
-  (->> xrel
-       (map (juxt f identity))
-       (into {})))
-
 (defn- solve-part-two
   [rooms-str]
   (get-in (->> rooms-str
         parse-rooms
         (filter real-room?)
         (map decrypt-room)
-        (index-by :name))
+        (utils/index-by :name))
           ["northpole-object-storage" :sector-id]))
 
 (comment

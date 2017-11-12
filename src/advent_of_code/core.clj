@@ -1,12 +1,13 @@
 (ns advent-of-code.core
   (:gen-class)
-  (:require [advent-of-code.no-time-for-a-taxicab :as day1]
+  (:require [advent-of-code.balance-bots :as day10]
+            [advent-of-code.no-time-for-a-taxicab :as day1]
             [advent-of-code.security-through-obscurity :as day4]
             [clojure.java.io :as io]
             [clojure.string :as str]
             [clojure.tools.cli :refer [parse-opts]]))
 
-(def ^:private solved-days #{1 4})
+(def ^:private solved-days #{1 4 10})
 
 (def ^:private cli-options
   [["-d" "--day DAY" "Day number"
@@ -33,5 +34,6 @@
       (:help options) (println help-text)
       (and day input) (case day
                         1 (day1/present-solution input)
-                        4 (day4/present-solution input))
+                        4 (day4/present-solution input)
+                        10 (day10/present-solution input))
       :else (println "Sorry, I didn't understand that. Have you considered running me with --help?"))))
