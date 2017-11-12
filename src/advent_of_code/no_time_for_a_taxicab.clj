@@ -1,13 +1,31 @@
 (ns advent-of-code.no-time-for-a-taxicab
-  (:require [clojure.java.io :as io]))
+  (:require [clojure.java.io :as io]
+            [clojure.set :as set]
+            [clojure.spec.alpha :as s]))
 
 (def ^:private instruction-str
   (-> "input-01.txt" io/resource slurp))
 
-(def ^:private headings [:N :E :S :W])
-(def ^:private directions [:L :R])
+;; This keeps generative testing durations down
+(s/def ::int (s/int-in (- 10000) 10000))
+(s/def ::nat (s/int-in 0 10000))
 
-(defn- parse-instructions
+(def ^:private headings [:N :E :S :W])
+(s/def ::heading (set headings))
+
+(def ^:private directions [:L :R])
+(s/def ::direction (set directions))
+
+(s/def ::turn-instruction
+  (s/tuple ::direction ::nat))
+
+(s/def ::head-instruction
+  (s/tuple ::heading ::nat))
+
+(s/def ::position
+  (s/tuple ::int ::int))
+
+(defn parse-instructions
   "Extract the individual turn and step instructions from a string, returning a
   seq of 2-vectors of keywordized turn direction and integer step amount."
   [instruction-str]
@@ -16,26 +34,35 @@
        (map (fn [[_ direction steps]]
               [(keyword direction) (Integer/parseInt steps)]))))
 
-(defn- turn
+(s/fdef parse-instructions
+        :args string?
+        :ret (s/coll-of ::turn-instruction))
+
+(defn turn
   "Determines the new heading from the current heading and a turn direction."
   [heading direction]
-  {:pre [(contains? (set headings) heading)
-         (contains? (set directions) direction)]}
   (let [left (zipmap (next (cycle headings)) headings)
         right (zipmap headings (next (cycle headings)))]
     (get-in {:L left, :R right} [direction heading])))
 
-(defn- inertialize-instructions
+(s/fdef turn
+        :args (s/cat :heading ::heading :direction ::direction)
+        :ret ::heading)
+
+(defn inertialize-instructions
   "Transforms a sequence of instructions from the body-centered, turn-based
   coordinate system into a geodetic coordinate system."
-  [instruction-seq]
-  {:post [#(= (count instruction-seq) (count %))]}
-  (let [directions (map first instruction-seq)
-        steps (map second instruction-seq)
+  [turn-instruction-seq]
+  (let [directions (map first turn-instruction-seq)
+        steps (map second turn-instruction-seq)
         headings (next (reductions turn :N directions))]
     (map vector headings steps)))
 
-(defn- move
+(s/fdef inertialize-instructions
+        :args (s/coll-of ::turn-instruction)
+        :ret (s/coll-of ::head-instruction))
+
+(defn move
   ([]
    [0 0])
   ([instruction]
@@ -47,17 +74,20 @@
      :E [lat (+ lon steps)]
      :W [lat (- lon steps)])))
 
-(defn- final-location
+(s/fdef move
+        :args (s/cat :position ::position :instruction ::head-instruction)
+        :ret ::position)
+
+(defn final-location
   "Computes the final location from a sequence of absolute movement instruction."
   [instruction-seq]
-  {:pre [(every? (every-pred #(= 2 (count %))
-                             #(contains? (set headings) (first %))
-                             #(pos? (second %)))
-                 instruction-seq)]
-   :post [#(= 2 (count %))]}
   (reduce move [0 0] instruction-seq))
 
-(defn- taxicab-metric
+(s/fdef final-location
+        :args (s/coll-of ::head-instruction)
+        :ret ::position)
+
+(defn taxicab-metric
   "Computes the taxicab (or Manhattan) distance of two points in Cartesian
   coordinates."
   ([p]
@@ -68,6 +98,10 @@
    (->> pb
         (map (fn [ca cb] (Math/abs (- ca cb))) pa)
         (reduce +))))
+
+(s/fdef taxicab-metric
+        :args (s/tuple ::position)
+        :ret (s/and integer? (s/alt :pos pos? :zero zero?)))
 
 (defn- solve-part-one
   "Determines the shortest path to Easter Bunny HQ, given a file containing
@@ -82,27 +116,37 @@
 (comment
   (solve-part-one instructions))
 
-(defn- expand-instructions
+(defn expand-instructions
   "Replaces every multi-step absolute instruction by respectively many single
   steps."
   [instruction-seq]
   (mapcat (fn [[heading steps]] (repeat steps [heading 1])) instruction-seq))
 
-(defn- intermediate-locations
+(s/fdef expand-instructions
+        :args (s/coll-of ::head-instruction)
+        :ret (s/coll-of ::head-instruction))
+
+(defn intermediate-locations
   "Computes the sequence of locations that arise from following a sequence of
   inertial instructions. "
   [instruction-seq]
   (reductions move [0 0] instruction-seq))
 
-(defn- first-duplicate
+(s/fdef intermediate-locations
+        :args (s/coll-of ::head-instruction)
+        :ret (s/coll-of ::position))
+
+(defn first-duplicate
   "Returns the first element from a sequence that has already occurred before."
   [xs]
-  {:pre [(sequential? xs)]}
   (reduce (fn [seen new]
             (if-not (contains? seen new)
               (conj seen new)
               (reduced new)))
           #{} xs))
+
+(s/fdef first-duplicate
+        :args sequential?)
 
 (defn- solve-part-two
   [instruction-str]
