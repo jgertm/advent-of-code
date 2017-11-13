@@ -26,7 +26,7 @@
 
 (def ^:private help-text
   (str "Welcome to my solution to Advent of Code 2016.
-  Usage: aoc -d <day#> -i <input-file>\n\n"
+  Usage: aoc (--help|--test|--day <day#> --input <input-file>)\n\n"
        (->> cli-options
             (map #(->> % (take 3) (str/join " ") (format "  %s")))
             (str/join "\n"))))
