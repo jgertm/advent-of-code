@@ -2,10 +2,12 @@
   (:gen-class)
   (:require [advent-of-code.balance-bots :as day10]
             [advent-of-code.no-time-for-a-taxicab :as day1]
+            advent-of-code.no-time-for-a-taxicab-test
             [advent-of-code.security-through-obscurity :as day4]
             [clojure.java.io :as io]
             [clojure.string :as str]
-            [clojure.tools.cli :refer [parse-opts]]))
+            [clojure.tools.cli :refer [parse-opts]]
+            [clojure.test :as test]))
 
 (def ^:private solved-days #{1 4 10})
 
@@ -17,6 +19,8 @@
    ["-i" "--input INPUT-FILE" "File containing the problem input"
     :default (io/resource "input-01.txt")
     :parse-fn io/file]
+   ["-t" "--test" "Run the test suite"
+    :default false]
    ["-h" "--help" "Print the help message"
     :default nil]])
 
@@ -32,6 +36,7 @@
         {:keys [day input]} options]
     (cond
       (:help options) (println help-text)
+      (:test options) (test/run-all-tests #"^advent-of-code\..*test$")
       (and day input) (case day
                         1 (day1/present-solution input)
                         4 (day4/present-solution input)
