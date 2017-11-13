@@ -116,14 +116,13 @@
 (comment
   (solve-part-one instructions))
 
-(defn expand-instructions
-  "Replaces every multi-step absolute instruction by respectively many single
-  steps."
-  [instruction-seq]
-  (mapcat (fn [[heading steps]] (repeat steps [heading 1])) instruction-seq))
+(defn expand-instruction
+  "Turns a multi-step absolute instruction into multiple single-step instructions."
+  [[heading steps]]
+  (repeat steps [heading 1]))
 
-(s/fdef expand-instructions
-        :args (s/coll-of ::head-instruction)
+(s/fdef expand-instruction
+        :args ::head-instruction
         :ret (s/coll-of ::head-instruction))
 
 (defn intermediate-locations
@@ -139,11 +138,13 @@
 (defn first-duplicate
   "Returns the first element from a sequence that has already occurred before."
   [xs]
-  (reduce (fn [seen new]
-            (if-not (contains? seen new)
-              (conj seen new)
-              (reduced new)))
-          #{} xs))
+  (let [result (reduce (fn [seen new]
+                        (if-not (contains? seen new)
+                          (conj seen new)
+                          (reduced [:reduced new])))
+                       #{} xs)]
+    (when (= :reduced (first result))
+      (second result))))
 
 (s/fdef first-duplicate
         :args sequential?)
@@ -153,7 +154,7 @@
   (-> instruction-str
       parse-instructions
       inertialize-instructions
-      expand-instructions
+      (mapcat expand-instruction)
       intermediate-locations
       first-duplicate
       taxicab-metric))
